@@ -1,0 +1,12 @@
+{% extends "layout.html"%}
+
+{% block pageTitle %}Home{% endblock %}
+{% block style %}
+<link rel="stylesheet" href="{{ url_for('static',filename='styles/generalstyle.css') }}"/>
+{% endblock %}
+{% block body %}
+<h1> Welcome to my book review website </h1>
+<p>
+Register to find new books to read! you can write reviews and see what others have to say about the books.
+</p>
+{% endblock %}

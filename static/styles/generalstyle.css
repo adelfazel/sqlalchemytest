@@ -1,0 +1,24 @@
+h1, form {
+	margin: 15px;
+}
+h2 {
+	margin: 30px;
+}
+p {
+	margin: inherit;
+}
+table {
+
+	width: 50%;
+}
+
+table,  td {
+	border: 1px solid black;
+	border-collapse: collapse;
+}
+td {
+  padding: 15px;
+}
+.leftMostTable {
+	background-color: lightgray;
+}

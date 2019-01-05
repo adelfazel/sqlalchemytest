@@ -1,0 +1,30 @@
+{% extends "layout.html"%}
+
+{% block pageTitle %}Explore! {% endblock %}
+
+{% block body %}
+<h1> Search books in our database  </h1>
+<p>
+Welcome {{ session.username }} to book search world!
+</p>
+<form action="{{ url_for('search') }}" method="post">
+	<input type="text" name="isbn" placeholder="Enter ISBN">
+  <input type="text" name="author" placeholder="Enter Author">
+	<input type="text" name="title" placeholder="Enter Title">
+	<button>Search!</button>
+</form>
+{% if searchResults is defined %}
+	<div>
+		 <ul>
+      	{% for book in searchResults %}
+            <li>
+                <a href="{{ url_for('booksearch', book_isbn=book.isbn) }}">
+	                    {{ book.title }} by {{ book.author }}
+                </a>
+            </li>
+        {% endfor %}
+			</ul>
+	</div>
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,32 @@
+{% extends "layout.html"%}
+{% block pageTitle %}Login{% endblock %}
+{% block style %}
+
+{% endblock %}
+
+{% block body %}
+<h1> Welcome to book review website, Login here </h1>
+<p>
+Welcome to my novel book search and review website!
+</p>
+<div>
+	{% if errormessage is defined %}
+	<p class="alert alert-warning">
+		{{ errormessage }}
+	</p>
+	{% endif %}
+</div>
+<form action="{{ url_for('login')}}" method="post">
+ <div class="container">
+    <label for="uname"><b>Username</b></label>
+    <input type="text" placeholder="Enter Username" name="username" required>
+    <label for="psw"><b>Password</b></label>
+    <input type="password" placeholder="Enter Password" name="password" required>
+	<button>Login</button>
+</div>
+</form>
+<p>
+Not a member yet? <a href="{{ url_for('register')}}">Register here</a>
+</p>
+
+{% endblock %}
