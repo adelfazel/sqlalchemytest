@@ -9,15 +9,12 @@ import hashlib
 import json
 import requests
 import time
+from model import *
 
 app = Flask(__name__)
 postgresURI = "postgres://bcvcpzwscndkyy:aec11e38db3ab3376ccadd2d83e3e308f60b542e633b44caea6ab7b1a4b422a4@ec2-54-235-169-191.compute-1.amazonaws.com:5432/d3n2ea3ie9begk"
-postgresPASS = "aec11e38db3ab3376ccadd2d83e3e308f60b542e633b44caea6ab7b1a4b422a4"
-postgresUSER = "bcvcpzwscndkyy"
-postgresDB = "d3n2ea3ie9begk"
 postgresPORT = 5432
 GoodReadsAPIParams = {"key":"vB3wSykxHaLhrIAg5GWZow"}
-GoodReadsAPIsecret = "hemIyGOsaG3dpuEBsOcLItY67AL6lsJB9GmRc3dRtg"
 
 # Check for environment variable
 os.environ['DATABASE_URL'] = postgresURI
@@ -154,15 +151,14 @@ def register():
         return render_template("register.html")
     else:
         username = request.form.get("username")
-        email = request.form.get("email")
         password = request.form.get("password")
         password = str(hashlib.md5(password.encode('utf-8')).hexdigest())
         created_on = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        existsStatus = db.execute(f"SELECT * from account where username='{username}' OR email='{email}'").rowcount != 0
+        existsStatus = db.execute(f"SELECT * from account where username='{username}'").rowcount != 0
         if existsStatus:
-            return render_template("register.html",errormessage=" Username or email are already taken ")
+            return render_template("register.html",errormessage=" Username are already taken ")
         else:
-            db.execute(f"INSERT INTO account (username,email,password,created_on) values('{username}', '{email}','{password}',TIMESTAMP '{created_on}')")
+            db.execute(f"INSERT INTO account (username,password,created_on) values('{username}', '{password}',TIMESTAMP '{created_on}')")
             db.commit()
             flash(" You registered successfully! ")
             session['username'] = username
@@ -215,4 +211,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0')
+    app.run(host='127.0.0.1',port=5000)
