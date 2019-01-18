@@ -64,9 +64,10 @@ def search():
             author = request.form.get("author").replace(" ", "")
             title = request.form.get("title").replace(" ", "")
             if author != "" or title != "" or isbn != "":
-                books = db.execute(f"SELECT * FROM books where isbn like '%{isbn}%' and author like '%{author}%' and title like '%{title}%'").fetchall()
-                if books:
-                    return render_template("search.html", session=session, searchResults = books)
+                #books = db.execute(f"SELECT * FROM books where isbn like '%{isbn}%' and author like '%{author}%' and title like '%{title}%'").fetchall()
+                booksQuery = books.query.filter(book.isbn.like('%{isbn}%') | book.author.like('%{author}%') | book.title.like('%{title}%') )
+                if booksQuery:
+                    return render_template("search.html", session=session, searchResults = booksQuery)
                 else:
                     flash("Your query yeilded no results")
                     return render_template("search.html", session=session)
@@ -211,4 +212,4 @@ def logout():
 
 
 if __name__ == '__main__':
-    app.run(host='127.0.0.1',port=5000)
+    app.run(host='127.0.0.1',port=5000,debug=True)
