@@ -6,11 +6,11 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime
 import hashlib
-import json
+from Models import *
 import requests
-import time
 
 app = Flask(__name__)
+
 postgresURI = "postgres://bcvcpzwscndkyy:aec11e38db3ab3376ccadd2d83e3e308f60b542e633b44caea6ab7b1a4b422a4@ec2-54-235-169-191.compute-1.amazonaws.com:5432/d3n2ea3ie9begk"
 postgresPASS = "aec11e38db3ab3376ccadd2d83e3e308f60b542e633b44caea6ab7b1a4b422a4"
 postgresUSER = "bcvcpzwscndkyy"
@@ -23,6 +23,9 @@ GoodReadsAPIsecret = "hemIyGOsaG3dpuEBsOcLItY67AL6lsJB9GmRc3dRtg"
 os.environ['DATABASE_URL'] = postgresURI
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
+app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
+app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
+
 
 # Configure session to use filesystem
 app.config["SESSION_PERMANENT"] = False
@@ -30,8 +33,9 @@ app.config["SESSION_TYPE"] = "filesystem"
 Session(app)
 
 
-engine = create_engine(os.getenv("DATABASE_URL"))
-db = scoped_session(sessionmaker(bind=engine))
+#engine = create_engine(os.getenv("DATABASE_URL"))
+#db = scoped_session(sessionmaker(bind=engine))
+db = SQLAlchemy()
 
 @app.context_processor
 def override_url_for():
