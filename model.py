@@ -8,8 +8,8 @@ class account(db.Model):
     __tablename__ = 'account'
     username = db.Column(db.String, primary_key = True)
     password = db.Column(db.String,  nullable=False)
-    #created_on = db.Column(db.DateTime, nullable=False)
-    #last_login= db.Column(db.DateTime, nullable=True)
+    created_on = db.Column(db.DateTime, nullable=False)
+    last_login= db.Column(db.DateTime, nullable=True)
 
 
 class books(db.Model):
