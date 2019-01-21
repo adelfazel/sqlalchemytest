@@ -1,15 +1,10 @@
-import os
-
+import os, sys, traceback,time,requests, hashlib
 from flask import Flask, session, render_template, request, redirect, session, url_for, flash, jsonify, abort
 from flask_session import Session
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime
-import hashlib
-from Models import *
-import requests
-import time
-from model import *
+from models import *
 
 app = Flask(__name__)
 
@@ -21,39 +16,24 @@ GoodReadsAPIParams = {"key":"vB3wSykxHaLhrIAg5GWZow"}
 os.environ['DATABASE_URL'] = postgresURI
 if not os.getenv("DATABASE_URL"):
     raise RuntimeError("DATABASE_URL is not set")
+
 app.config["SQLALCHEMY_DATABASE_URI"] = os.getenv("DATABASE_URL")
 app.config["SQLALCHEMY_TRACK_MODIFICATION"] = False
-
 
 # Configure session to use filesystem
 app.config["SESSION_PERMANENT"] = False
 app.config["SESSION_TYPE"] = "filesystem"
+db.init_app(app)
 Session(app)
 
-
-db = SQLAlchemy()
-
-@app.context_processor
-def override_url_for():
-    return dict(url_for=dated_url_for)
-
-def dated_url_for(endpoint, **values):
-    if endpoint == 'static':
-        filename = values.get('filename', None)
-        if filename:
-            file_path = os.path.join(app.root_path,
-                                     endpoint, filename)
-            values['q'] = int(os.stat(file_path).st_mtime)
-    return url_for(endpoint, **values)
-
+likeTemplate = '%{}%'
 
 @app.route("/")
 def index():
     session["page"] = "home"
     return render_template("index.html", session=session)
 
-
-@app.route("/search", methods=["POST", "GET"])
+@app.route("/search", methods=["GET","POST"])
 def search():
     session["page"] = "search"
     if session.get("logged_in", False) is False:
@@ -66,9 +46,10 @@ def search():
             isbn = request.form.get("isbn").replace(" ", "")
             author = request.form.get("author").replace(" ", "")
             title = request.form.get("title").replace(" ", "")
+
             if author != "" or title != "" or isbn != "":
                 #books = db.execute(f"SELECT * FROM books where isbn like '%{isbn}%' and author like '%{author}%' and title like '%{title}%'").fetchall()
-                booksQuery = books.query.filter(book.isbn.like('%{isbn}%') | book.author.like('%{author}%') | book.title.like('%{title}%') )
+                booksQuery = Book.query.filter(or_(Book.isbn.like('%{}%'.format(isbn)), Book.author.like('%{}%'.format(author)), Book.title.like('%{}%'.format(title)))).all()
                 if booksQuery:
                     return render_template("search.html", session=session, searchResults = booksQuery)
                 else:
@@ -88,32 +69,24 @@ def booksearch(book_isbn):
     if session.get("logged_in", False) is False:
         flash('You need to login to access search page')
         return redirect(url_for("login"))
-    try:
-        book = db.execute(f"SELECT * FROM books WHERE isbn = '{book_isbn}';").fetchone()
 
-        if book is None:
-            redirect(url_for('search'))
-        else:
-            if request.method == "POST":
-                try:
-                    created_on = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-                    commnet = request.form.get("comment")
-                    userrating = request.form.get("starRating")
-                    db.execute(f"INSERT INTO bookreviews (username,isbn,comment,stars,created_on) values ('{username}','{book_isbn}','{commnet}','{userrating}',TIMESTAMP '{created_on}');")
-                except Exception:
-                    flash("Cannot add your comment, you have already reviewed it!")
-                finally:
-                    db.commit()
-    except:
-        return render_template("search.html", errormessage=
-                               "No result found for your query")
+    #book = db.execute(f"SELECT * FROM books WHERE isbn = '{book_isbn}';").fetchone()
+    book = Book.query.get(book_isbn)
+    if book is None:
+        redirect(url_for('search'))
+    else:
+        if request.method == "POST":
+            created_on = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            comment = request.form.get("comment")
+            userrating = request.form.get("starRating")
+            #db.execute(f"INSERT INTO bookreviews (username,isbn,comment,stars,created_on) values ('{username}','{book_isb}','{commnet}','{userrating}',TIMESTAMP '{created_on}');")
+            newReview = Bookreview(username=username,isbn=book_isbn,comment=comment,stars=userrating,created_on=created_on)
+            succesful = Bookreview.addReview(newReview)
+            if not succesful:
+                flash("you cannot add more comments, you have already reviewed")
 
-    comments = db.execute("SELECT * FROM bookreviews WHERE isbn = :isbn;",{"isbn":book_isbn}).fetchall()
-
-
-    goodReadsData = None
-    goodReads_reviewcount = None
-    goodReads_ratings = None
+    #comments = db.execute("SELECT * FROM bookreviews WHERE isbn = :isbn;",{"isbn":book_isbn}).fetchall()
+    comments = Bookreview.query.filter_by(isbn = book_isbn).all()
     GoodReadsAPIParams["isbns"] = book_isbn
     goodReadsDataRaw = requests.get("https://www.goodreads.com/book/review_counts.json",
                    params=GoodReadsAPIParams)
@@ -136,13 +109,16 @@ def login():
         username = request.form.get("username")
         password = request.form.get("password")
         password = hashlib.md5(password.encode('utf-8')).hexdigest()
-        existsStatus = db.execute(f"SELECT * from account where username='{username}' AND password='{password}'").rowcount != 0
+        #existsStatus = db.execute(f"SELECT * from account where username='{username}' AND password='{password}'").fetchone() is None
+        existsStatus = Account.query.filter(and_(Account.username==username,  Account.password == password)).first() is not None
         if existsStatus:
             session['logged_in'] = True
             session['username'] = username
             flash('You were logged in')
-            db.execute("UPDATE account SET last_login=TIMESTAMP :vartime WHERE username=:username",{"vartime":str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"username":username} )
-            db.commit()
+            #db.execute("UPDATE account SET last_login=TIMESTAMP :vartime WHERE username=:username",{"vartime":str(datetime.now().strftime("%Y-%m-%d %H:%M:%S")),"username":username} )
+            user = Account.query.filter_by(username=username).first()
+            user.update_last_login()
+            db.session.commit()
             return redirect(url_for("search"))
         else:
             return render_template("login.html",session= session,errormessage=" Username or password are incorrect")
@@ -158,12 +134,17 @@ def register():
         password = request.form.get("password")
         password = str(hashlib.md5(password.encode('utf-8')).hexdigest())
         created_on = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-        existsStatus = db.execute(f"SELECT * from account where username='{username}'").rowcount != 0
+        #existsStatus = db.execute(f"SELECT * from account where username='{username}'").rowcount != 0
+        existsStatus = Account.query.filter_by(
+            username = username).first()
+        print("existsStatus = %s" %existsStatus )
         if existsStatus:
             return render_template("register.html",errormessage=" Username are already taken ")
         else:
-            db.execute(f"INSERT INTO account (username,password,created_on) values('{username}', '{password}',TIMESTAMP '{created_on}')")
-            db.commit()
+            #db.execute(f"INSERT INTO account (username,password,created_on) values('{username}', '{password}',TIMESTAMP '{created_on}')")
+            newUser = Account(username=username, password=password, created_on=created_on)
+            db.session.add(newUser)
+            db.session.commit()
             flash(" You registered successfully! ")
             session['username'] = username
             return redirect(url_for("login"))
@@ -176,7 +157,8 @@ def shortText():
 def api(isbn):
 
     session["page"] = "api"
-    book = db.execute("SELECT * FROM books WHERE isbn='{}'".format(isbn)).fetchone()
+    #book = db.execute("SELECT * FROM books WHERE isbn='{}'".format(isbn)).fetchone(
+    book = Book.query.get(isbn)
     if book is None:
         message = {'status': 404,'message': '%s not found in database'%isbn}
         resp = jsonify(message)
