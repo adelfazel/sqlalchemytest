@@ -4,6 +4,13 @@ from datetime import datetime
 db = SQLAlchemy()
 
 
+class Book(db.Model):
+    __tablename__ = 'books'
+    isbn = db.Column(db.String, primary_key = True)
+    title = db.Column(db.String,  nullable=False)
+    author = db.Column(db.String, nullable=False)
+    year= db.Column(db.Integer, nullable=False)
+
 class Account(db.Model):
     __tablename__ = 'account'
     username = db.Column(db.String, primary_key = True)
@@ -12,16 +19,6 @@ class Account(db.Model):
     last_login= db.Column(db.DateTime, nullable=True)
     def update_last_login(self):
         self.last_login  = str(datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
-		
-
-
-class Book(db.Model):
-    __tablename__ = 'books'
-    isbn = db.Column(db.String, primary_key = True)
-    title = db.Column(db.String,  nullable=False)
-    author = db.Column(db.DateTime, nullable=False)
-    year= db.Column(db.Integer, nullable=False)
-
 
 
 class Bookreview(db.Model):

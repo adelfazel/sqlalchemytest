@@ -4,7 +4,7 @@ from flask_session import Session
 from sqlalchemy import create_engine, or_, and_
 from sqlalchemy.orm import scoped_session, sessionmaker
 from datetime import datetime
-from models import *
+from Models import *
 
 app = Flask(__name__)
 
@@ -48,8 +48,8 @@ def search():
             title = request.form.get("title").replace(" ", "")
 
             if author != "" or title != "" or isbn != "":
-                #books = db.execute(f"SELECT * FROM books where isbn like '%{isbn}%' and author like '%{author}%' and title like '%{title}%'").fetchall()
-                booksQuery = Book.query.filter(or_(Book.isbn.like('%{}%'.format(isbn)), Book.author.like('%{}%'.format(author)), Book.title.like('%{}%'.format(title)))).all()
+                # books = db.execute(f"SELECT * FROM books where isbn like '%{isbn}%' or author like '%{author}%' or title like '%{title}%'").fetchall()
+                booksQuery = Book.query.filter(and_(Book.isbn.like('%{}%'.format(isbn)), Book.author.like('%{}%'.format(author)), Book.title.like('%{}%'.format(title)))).all()
                 if booksQuery:
                     return render_template("search.html", session=session, searchResults = booksQuery)
                 else:
