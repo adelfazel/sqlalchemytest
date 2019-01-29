@@ -25,9 +25,9 @@ class Bookreview(db.Model):
     __tablename__ = 'bookreviews'
     username = db.Column(db.String, db.ForeignKey("account.username"), nullable = False)
     isbn = db.Column(db.String, db.ForeignKey("books.isbn"), nullable = False)
-    comment = db.Column(db.String, nullable = True)
+    comment = db.Column(db.String, nullable = False)
     stars = db.Column(db.Integer, nullable = False)
-    created_on = db.Column(db.DateTime, nullable = True)
+    created_on = db.Column(db.DateTime, nullable = False)
     db.PrimaryKeyConstraint(isbn,username)
     def addReview(newReview):
         try:
